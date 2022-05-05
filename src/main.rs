@@ -9,6 +9,7 @@ USAGE
 gobuster_url_lister /path/to/gobuster/output/file /path/to/save/urls/
     ";
     let mut urls: Vec<String>  = Vec::new();
+    let mut accessible_urls: Vec<String> = Vec::new();
     if args.len() != 3{
         print!("{}", usage);
     }
@@ -20,6 +21,7 @@ gobuster_url_lister /path/to/gobuster/output/file /path/to/save/urls/
         let mut base = String::new();
         let mut url = String::new();
         let mut path = String::new();
+        let mut status = String::new();
         for chunk in chunks{
             if chunk.len() > 0{
                 let lines: Vec<&str> = chunk.split("\n").collect();
@@ -31,14 +33,25 @@ gobuster_url_lister /path/to/gobuster/output/file /path/to/save/urls/
                     if line.contains("(Status:"){
                         let path_vec: Vec<&str> = line.split("(Status:").collect();
                         path = path_vec[0].trim().to_string();
-
+                        let status_vec: Vec<&str> = path_vec[1].split(")").collect();
+                        status = status_vec[0].to_string();
+                        println!("{}", status);
                     }
                     if path.len() > 1{
-                        url = format!("{}{}", base, path);
-                        if urls.contains(&url.to_string()) == false{
-                            urls.push(url);
-                        }  
+                        if status == " 200".to_string(){
+                            url = format!("{}{}", base, path);
+                            if accessible_urls.contains(&url.to_string()) == false{
+                                accessible_urls.push(url);
+                            }
+                        }
+                        else{
+                            url = format!("{}{}", base, path);
+                            if urls.contains(&url.to_string()) == false{
+                                urls.push(url);
+                            }  
+                        }
                     }
+                    status = String::new();
                     path = String::new();
                 }
             }
@@ -47,6 +60,12 @@ gobuster_url_lister /path/to/gobuster/output/file /path/to/save/urls/
         for url in urls{
             println!("URL = {}", url);
             writeln!(&mut outfile, "{}", url).expect("failed to write line to output file");
+        }
+        println!("These are accessible check them first!");
+        writeln!(&mut outfile, "These are accessible check them first!");
+        for url in accessible_urls{
+            println!("{}", url);
+            writeln!(&mut outfile, "{}", url);
         }
     }
 }
